@@ -5,24 +5,32 @@ const http = require("http");
 const httpStatus = require("http-status-codes");
 const fs = require("fs");
 
-const routeMap = {
-    "/": "views/index.html"
-};
+const getViewURL = (url) => {
+    // url = "/about", viewURL = "views/about.html"
+    //url = "/index", viewURL = "views/index.html"
+    if (url === "/") {
+        url = "/index";
+    }
+    console.log(`File Location: views${url}.html`)
+    return `views${url}.html`;
+}
 
 const app = http.createServer();
 
 app.on("request", (req, res) => {
-    res.writeHead(httpStatus.StatusCode.OK, {
-        "Content-Type": "text/html"
-    });
-    if (routeMap[req.url]) {
-        fs.readFile(routeMap[req.url], (error, data) => {
+    let viewUrl = getViewURL(req.url);
+    fs.readFile(viewUrl, (error, data) => {
+        if (error) {
+            res.writeHead(httpStatus.StatusCodes.NOT_FOUND);
+            res.write("<h1>FILE NOT FOUND</h1>");
+        } else {
+            res.writeHead(httpStatus.StatusCodes.OK, {
+                "Content-Type": "text/html"
+            });
             res.write(data);
-            res.end();
-        });
-    } else {
-        res.end("<h1>Sorry, not found.</h1>");
-    }
+        }
+        res.end()
+    });
 }).listen(port);
 
 console.log(`The server has started and is listening on port: ${port}`);
