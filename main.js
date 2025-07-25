@@ -5,33 +5,67 @@ const http = require("http");
 const httpStatus = require("http-status-codes");
 const fs = require("fs");
 
-const getViewURL = (url) => {
-    // url = "/about", viewURL = "views/about.html"
-    //url = "/index", viewURL = "views/index.html"
-    if (url === "/") {
-        url = "/index";
-    }
-    console.log(`File Location: views${url}.html`)
-    return `views${url}.html`;
-}
+const router = require("./router")
 
-const app = http.createServer();
+const plainTextContentType = {
+    "Content-Type": "text/plain"
+};
+const htmlContentType = {
+    "Content-Type": "text/html"
+};
 
-app.on("request", (req, res) => {
-    let viewUrl = getViewURL(req.url);
-    fs.readFile(viewUrl, (error, data) => {
-        if (error) {
-            res.writeHead(httpStatus.StatusCodes.NOT_FOUND);
-            res.write("<h1>FILE NOT FOUND</h1>");
-        } else {
-            res.writeHead(httpStatus.StatusCodes.OK, {
-                "Content-Type": "text/html"
-            });
+const customReadFile = (file_path, content_type, res) => {
+    if (fs.existsSync(file_path)) {
+        fs.readFile(file_path, (error, data) => {
+            if (error) {
+                console.log(error);
+                sendErrorResponse(res);
+                return;
+            } else {
+                res.writeHead(httpStatus.StatusCodes.OK, {
+                    "Content-Type": content_type
+                });
+            }
             res.write(data);
-        }
-        res.end()
+            res.end();
+        })
+    } else {
+        sendErrorResponse(res);
+    }
+};
+
+router.get("/", (req, res) => {
+    res.writeHead(httpStatus.StatusCodes.OK, plainTextContentType);
+    res.end("INDEX");
+});
+
+router.get("/index.html", (req, res) => {
+    customReadFile("views/index.html", htmlContentType, res);
+});
+
+router.get("/about.html", (req, res) => {
+    customReadFile("views/about.html", htmlContentType, res);
+});
+
+router.get("/contact.html", (req, res) => {
+    customReadFile("views/contact.html", htmlContentType, res);
+})
+
+router.post("/", (req, res) => {
+    res.writeHead(httpStatus.StatusCodes.OK, plainTextContentType);
+    res.end("POSTED")
+})
+
+
+const sendErrorResponse = res => {
+    res.writeHead(httpStatus.StatusCodes.NOT_FOUND, {
+        "Content-Type": "text/html"
     });
-}).listen(port);
+    res.write("<h1>File not Found!</h1>");
+    res.end();
+};
+
+http.createServer(router.handle).listen(port);
 
 console.log(`The server has started and is listening on port: ${port}`);
 
